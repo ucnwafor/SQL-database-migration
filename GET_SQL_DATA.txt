@@ -1,0 +1,70 @@
+-- To get the sum of all numerical columns--
+
+SET NOCOUNT ON 
+
+
+
+DECLARE @SourceDB VARCHAR(100) 
+DECLARE @SourceSchema VARCHAR(100) 
+DECLARE @SourceTableName VARCHAR(100)
+DECLARE @SourceColumnName VARCHAR(100)
+
+DECLARE @TargetDB VARCHAR(100) -----name of Oracle Linked Server
+DECLARE @TargetSchema VARCHAR(100) ---Owner name
+DECLARE @TargetTableName VARCHAR(100)
+DECLARE @TargetColumnName VARCHAR(100)
+
+DECLARE @SqlCommand VARCHAR(8000) 
+
+SET @TargetDB = 'ADVENTUREWORKS2014' 
+
+                        
+DECLARE TABLE_CURSOR CURSOR  FOR 
+SELECT [Database Name]
+      ,[Source Schema]
+      ,[Source Table Name]
+      ,[Source Column Name]
+      ,[Target Schema/Owner]
+      ,[Target Table Name]
+      ,[Target Column Name]
+  FROM [MIGRATION_TESTING].[dbo].[Comparison_Sum_NumericColumns]
+          
+OPEN TABLE_CURSOR 
+
+FETCH NEXT FROM TABLE_CURSOR 
+INTO @SourceDB
+    ,@SourceSchema
+	,@SourceTableName
+	,@SourceColumnName 
+	,@TargetSchema
+	,@TargetTableName
+	,@TargetColumnName 
+
+
+
+WHILE @@FETCH_STATUS = 0 
+      BEGIN 
+        SET @SqlCommand = 'UPDATE [MIGRATION_TESTING].[dbo].[Comparison_Sum_NumericColumns]
+       SET [Source Column Sum]=(SELECT SUM('+@SourceColumnName+') FROM '+@SourceDB+'.'+@SourceSchema+'.'+@SourceTableName+')
+      ,[Target Column Sum]=(SELECT SUM('+@TargetColumnName+') FROM '+@TargetDB+'..'+UPPER(@TargetSchema)+'.'+UPPER(@TargetTableName)+')
+	   WHERE [Database Name]='''+@SourceDB+''' AND [Source Schema]='''+@SourceSchema+''' AND [Source Table Name]='''+@SourceTableName+''' 
+	   AND [Source Column Name]='''+@SourceColumnName+''''
+		
+		
+  ---  PRINT @sqlCommand
+   EXEC (@sqlCommand) 
+    
+FETCH NEXT FROM TABLE_CURSOR 
+INTO @SourceDB
+    ,@SourceSchema
+	,@SourceTableName
+	,@SourceColumnName 
+	,@TargetSchema
+	,@TargetTableName
+	,@TargetColumnName 
+
+ 
+  END 
+   
+CLOSE TABLE_CURSOR 
+DEALLOCATE TABLE_CURSOR 
